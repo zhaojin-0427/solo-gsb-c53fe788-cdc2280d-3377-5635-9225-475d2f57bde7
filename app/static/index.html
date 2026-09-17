@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>合同义务状态推演台</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>合同义务状态推演台</h1>
+    <div class="view-bar">
+      <label>视角：</label>
+      <select id="view-select"></select>
+      <span id="version-info" class="muted"></span>
+      <button id="btn-refresh" class="btn">刷新</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="dashboard">义务状态</button>
+    <button class="tab" data-tab="events">事件时间线</button>
+    <button class="tab" data-tab="rules">规则版本</button>
+    <button class="tab" data-tab="scenarios">分叉与比较</button>
+  </nav>
+
+  <main>
+    <section id="tab-dashboard" class="tab-panel active">
+      <div id="eval-info" class="muted"></div>
+      <div id="obligations"></div>
+    </section>
+
+    <section id="tab-events" class="tab-panel">
+      <h2>事件时间线</h2>
+      <div id="events-table"></div>
+      <h3>导入事件（JSON，单个对象或数组）</h3>
+      <textarea id="event-json" rows="6" spellcheck="false"
+        placeholder='{"event_type":"payment.deposit","scope":"C-001","valid_time":"2026-09-03T10:00:00Z","payload":{"amount":30000}}'></textarea>
+      <div>
+        <button id="btn-import" class="btn primary">导入事件</button>
+        <span id="import-msg" class="muted"></span>
+      </div>
+    </section>
+
+    <section id="tab-rules" class="tab-panel">
+      <h2>规则（当前视角）</h2>
+      <div id="rules-meta" class="muted"></div>
+      <textarea id="rules-json" rows="18" spellcheck="false"></textarea>
+      <div>
+        <input id="rules-note" placeholder="版本备注（可选）" />
+        <button id="btn-save-rules" class="btn primary">保存为新版本</button>
+        <span id="rules-msg" class="muted"></span>
+      </div>
+      <h3>主线规则版本历史</h3>
+      <div id="rule-versions"></div>
+    </section>
+
+    <section id="tab-scenarios" class="tab-panel">
+      <h2>分叉</h2>
+      <p class="muted">在「事件时间线」中可对任一主线事件点击「从此分叉」；分叉继承该事件（含）之前的事实与当时的规则，之后可独立修改事实与规则。</p>
+      <div id="scenario-list"></div>
+      <h2>状态比较</h2>
+      <div class="compare-bar">
+        <select id="compare-a"></select>
+        <span>对比</span>
+        <select id="compare-b"></select>
+        <button id="btn-compare" class="btn primary">比较</button>
+      </div>
+      <div id="compare-result"></div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
