@@ -1,0 +1,14 @@
+"""Status constants shared by engine and API models."""
+
+STATUS_PENDING = "待触发"
+STATUS_ACTIVE = "履行中"
+STATUS_FULFILLED = "已履行"
+STATUS_OVERDUE = "逾期"
+STATUS_SUBSTITUTED = "被替代"
+ALL_STATUSES = (
+    STATUS_PENDING,
+    STATUS_ACTIVE,
+    STATUS_FULFILLED,
+    STATUS_OVERDUE,
+    STATUS_SUBSTITUTED,
+)

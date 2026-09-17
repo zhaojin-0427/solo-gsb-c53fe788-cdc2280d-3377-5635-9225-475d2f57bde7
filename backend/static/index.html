@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合同义务状态推演台</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>合同义务状态推演台</h1>
+  <div class="branch-bar">
+    <label>当前分支
+      <select id="branchSelect"></select>
+    </label>
+    <span id="branchMeta" class="muted"></span>
+    <span class="spacer"></span>
+    <button id="tabRules" class="tab active">规则版本</button>
+    <button id="tabEvents" class="tab">事实事件</button>
+    <button id="tabState" class="tab">状态推演</button>
+    <button id="tabCompare" class="tab">分叉对比</button>
+  </div>
+</header>
+
+<main>
+  <!-- ========== 规则版本 ========== -->
+  <section id="paneRules" class="pane">
+    <div class="pane-head">
+      <h2>版本化规则</h2>
+      <div>
+        <select id="ruleVersionSelect"></select>
+        <button id="newVersionBtn" class="primary">用当前规则创建新版本</button>
+      </div>
+    </div>
+    <p class="muted">规则按版本整体快照存储；新版本通过 CAS 提交（携带当前最新版本号），冲突时整批拒绝。</p>
+    <div id="ruleVersionMeta" class="card"></div>
+    <h3>规则清单（可直接编辑）</h3>
+    <div id="rulesEditor"></div>
+    <div class="row">
+      <button id="addRuleBtn">+ 添加规则</button>
+      <button id="saveVersionBtn" class="primary">校验并创建新版本</button>
+      <span id="rulesMsg" class="msg"></span>
+    </div>
+    <h3>当前分支绑定</h3>
+    <div class="card row">
+      <span id="branchRuleInfo"></span>
+      <span class="spacer"></span>
+      <select id="switchRuleVersionSelect"></select>
+      <button id="switchRuleBtn">切换分支规则版本（CAS）</button>
+    </div>
+  </section>
+
+  <!-- ========== 事实事件 ========== -->
+  <section id="paneEvents" class="pane hidden">
+    <div class="pane-head">
+      <h2>事实事件</h2>
+      <span id="eventsBranchMeta" class="muted"></span>
+    </div>
+    <p class="muted">回放顺序：有效时间 → 同刻创建序号(seq) → code → 事件ID。录入时间仅用于审计。所有写操作以分支版本号做 CAS，冲突不产生部分写入。</p>
+
+    <div class="card">
+      <h3>导入事件（批量，单次事务）</h3>
+      <div class="grid2">
+        <label>事件类型 <input id="evType" placeholder="如：合同签订 / 履行 / 付款方式变更"></label>
+        <label>业务编码 code <input id="evCode" placeholder="如 E011"></label>
+        <label>有效时间 <input id="evValidAt" type="datetime-local" step="1"></label>
+        <label>录入时间（可空=同有效时间） <input id="evRecordedAt" type="datetime-local" step="1"></label>
+        <label>同刻序号 seq <input id="evSeq" type="number" value="0" min="0"></label>
+        <label>payload.obligation（履行/暂停类事件需要） <input id="evObligation" placeholder="如 DELIVER"></label>
+      </div>
+      <label class="block">附加 payload JSON（可选）
+        <input id="evPayload" placeholder='{"key":"value"}'>
+      </label>
+      <div class="row">
+        <button id="addEventBtn" class="primary">以分支版本基线提交事件</button>
+        <span class="muted">当前基线：<b id="eventsBaseline"></b></span>
+        <span id="eventsMsg" class="msg"></span>
+      </div>
+    </div>
+
+    <h3>事件列表（按回放顺序）</h3>
+    <table id="eventsTable">
+      <thead><tr>
+        <th>回放序</th><th>ID</th><th>code</th><th>类型</th><th>有效时间</th><th>seq</th>
+        <th>payload</th><th>录入时间</th><th>状态</th><th>操作</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- ========== 状态推演 ========== -->
+  <section id="paneState" class="pane hidden">
+    <div class="pane-head">
+      <h2>状态推演</h2>
+      <div class="row">
+        <label>推演时点 as-of <input id="asOf" type="datetime-local" step="1"></label>
+        <button id="rerunBtn">重新推演</button>
+        <button id="asOfDefaultBtn">用默认时点</button>
+      </div>
+    </div>
+    <div id="stateMeta" class="card"></div>
+    <div id="summaryBar"></div>
+    <h3>义务实例</h3>
+    <div id="obligationList"></div>
+    <div id="engineNotices"></div>
+  </section>
+
+  <!-- ========== 分叉对比 ========== -->
+  <section id="paneCompare" class="pane hidden">
+    <div class="pane-head"><h2>分叉与差异对比</h2></div>
+    <div class="card">
+      <h3>从任一事件分叉</h3>
+      <p class="muted">复制“所选事件及其之前”的全部事件（含已撤回）到新分支；谱系根事件保持不变，因此两侧义务可对齐比较。</p>
+      <div class="grid2">
+        <label>新分支名 <input id="forkName" placeholder="如：条款修改实验"></label>
+        <label>使用规则版本（留空沿用来源分支） <input id="forkRuleVersion" type="number" min="1" placeholder="可选"></label>
+      </div>
+      <label class="block">分叉起点事件
+        <select id="forkEventSelect"></select>
+      </label>
+      <button id="forkBtn" class="primary">创建分叉分支</button>
+      <span id="forkMsg" class="msg"></span>
+    </div>
+    <div class="card">
+      <h3>比较两个分支</h3>
+      <div class="grid2">
+        <label>基线分支 <select id="cmpBase"></select></label>
+        <label>对比分支 <select id="cmpTarget"></select></label>
+      </div>
+      <label class="block">统一 as-of（留空=两侧最远事件时间）
+        <input id="cmpAsOf" type="datetime-local" step="1">
+      </label>
+      <button id="compareBtn" class="primary">比较状态差异</button>
+    </div>
+    <div id="compareResult"></div>
+  </section>
+</main>
+
+<div id="toast" class="hidden"></div>
+<script src="app.js"></script>
+</body>
+</html>
